@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import AppLayout from "./layouts/AppLayout";
 import AuthLayout from "./layouts/AuthLayout";
 
@@ -57,10 +58,27 @@ import NoTasks from "./pages/states/NoTasks";
 import Error404 from "./pages/states/Error404";
 import Error500 from "./pages/states/Error500";
 
-export default function App() {
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-background">
+        <div className="text-primary font-primary text-sm">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function AppRoutes() {
   return (
     <Routes>
-      {/* Auth routes — no sidebar */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
@@ -68,8 +86,13 @@ export default function App() {
         <Route path="/two-factor" element={<TwoFactor />} />
       </Route>
 
-      {/* App routes — sidebar / bottom nav */}
-      <Route element={<AppLayout />}>
+      <Route
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard/timer" element={<ActiveTimer />} />
@@ -120,9 +143,16 @@ export default function App() {
         <Route path="/no-tasks" element={<NoTasks />} />
       </Route>
 
-      {/* Error pages */}
       <Route path="/500" element={<Error500 />} />
       <Route path="*" element={<Error404 />} />
     </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   );
 }

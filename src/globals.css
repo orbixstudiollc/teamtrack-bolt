@@ -4,19 +4,33 @@
   --color-background: #000000;
   --color-foreground: #FFFFFF;
   --color-card: #111111;
+  --color-card-alt: #0A0A0A;
+  --color-card-alt2: #0D0D0D;
   --color-card-foreground: #FFFFFF;
   --color-border: #1A1A1A;
   --color-muted: #2E2E2E;
   --color-muted-foreground: #6e6e6e;
+  --color-text-secondary: #6e6e6e;
+  --color-text-tertiary: #999999;
+  --color-text-dim: #404040;
   --color-primary: #BFFF00;
   --color-primary-foreground: #000000;
   --color-destructive: #FF5C33;
+  --color-destructive-alt: #FF4444;
   --color-warning: #FFB800;
   --color-info: #00C2FF;
   --color-purple: #7B61FF;
+  --color-success-bg: #0D1A0F;
+  --color-success-border: #1A3A1F;
+  --color-warning-bg: #1A1207;
+  --color-warning-border: #3A2A10;
+  --color-error-bg: #0D0A05;
+  --color-error-border: #3A1510;
 
   --radius-none: 0;
-  --radius-m: 1rem;
+  --radius-sm: 0.25rem;
+  --radius-m: 0.5rem;
+  --radius-lg: 1rem;
   --radius-pill: 9999px;
 
   --font-family-primary: "JetBrains Mono", monospace;
