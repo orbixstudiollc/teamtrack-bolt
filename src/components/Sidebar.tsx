@@ -30,14 +30,14 @@ function NavItem({ to, icon: Icon, label }: { to: string; icon: React.ElementTyp
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `flex items-center gap-3 px-3.5 py-3 font-primary text-[13px] w-full ${
+        `flex items-center gap-3 px-3.5 py-2.5 font-primary text-[13px] w-full transition-colors ${
           isActive
-            ? "bg-card font-medium text-foreground border-l-2 border-primary"
-            : "text-muted-foreground hover:text-foreground"
+            ? "bg-card text-foreground border-l-[3px] border-primary"
+            : "text-muted-foreground hover:text-foreground hover:bg-card/50"
         }`
       }
     >
-      <Icon size={16} />
+      <Icon size={18} className="flex-shrink-0" />
       {label}
     </NavLink>
   );
@@ -45,39 +45,44 @@ function NavItem({ to, icon: Icon, label }: { to: string; icon: React.ElementTyp
 
 export default function Sidebar() {
   return (
-    <aside className="hidden md:flex flex-col w-60 h-screen bg-background border-r border-border flex-shrink-0">
-      {/* Logo */}
-      <div className="flex items-center gap-2 px-6 h-[88px] border-b border-border">
-        <div className="w-8 h-8 bg-primary rounded" />
-        <span className="font-secondary text-[15px] font-semibold tracking-[3px] text-foreground">
+    <aside className="hidden md:flex flex-col w-60 h-screen bg-black border-r border-border flex-shrink-0">
+      <div className="flex items-center gap-2.5 px-6 h-[88px] border-b border-border">
+        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+          <div className="w-4 h-4 bg-black rounded-sm" />
+        </div>
+        <span className="font-secondary text-base font-bold tracking-[0.15em] text-foreground">
           TEAMTRACK
         </span>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-0 px-3">
-        <p className="text-muted-foreground font-primary text-xs font-medium px-3.5 py-4 tracking-wide">
+      <nav className="flex-1 overflow-y-auto py-6 px-3">
+        <p className="text-muted-foreground font-primary text-[10px] font-semibold px-3.5 pb-2 tracking-[0.1em] uppercase">
           MAIN
         </p>
-        {mainNav.map((item) => (
-          <NavItem key={item.to} {...item} />
-        ))}
+        <div className="space-y-0.5">
+          {mainNav.map((item) => (
+            <NavItem key={item.to} {...item} />
+          ))}
+        </div>
 
-        <p className="text-muted-foreground font-primary text-xs font-medium px-3.5 py-4 tracking-wide">
+        <p className="text-muted-foreground font-primary text-[10px] font-semibold px-3.5 pb-2 pt-6 tracking-[0.1em] uppercase">
           MANAGE
         </p>
-        {manageNav.map((item) => (
-          <NavItem key={item.to} {...item} />
-        ))}
+        <div className="space-y-0.5">
+          {manageNav.map((item) => (
+            <NavItem key={item.to} {...item} />
+          ))}
+        </div>
       </nav>
 
-      {/* Footer */}
-      <div className="flex items-center gap-2 px-6 py-6 border-t border-border">
-        <div className="flex-1 min-w-0">
-          <p className="text-foreground font-primary text-xs font-medium truncate">Sarah Admin</p>
-          <p className="text-muted-foreground font-primary text-xs truncate">sarah@teamtrack.io</p>
+      <div className="border-t border-border px-6 py-5">
+        <div className="flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <p className="text-foreground font-primary text-[13px] font-medium truncate">Sarah Admin</p>
+            <p className="text-muted-foreground font-primary text-[11px] truncate mt-0.5">sarah@teamtrack.io</p>
+          </div>
+          <ChevronDown size={16} className="text-muted-foreground flex-shrink-0 ml-2" />
         </div>
-        <ChevronDown size={24} className="text-muted-foreground flex-shrink-0" />
       </div>
     </aside>
   );
