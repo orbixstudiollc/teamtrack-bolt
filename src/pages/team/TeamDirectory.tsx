@@ -1,293 +1,129 @@
 import { useState } from "react";
-import {
-  Search,
-  Plus,
-  Eye,
-  Mail,
-  Building2,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-import PageHeader from "../../components/PageHeader";
+import { Search, Plus, Download, MoreHorizontal } from "lucide-react";
 import Badge from "../../components/Badge";
-import Button from "../../components/Button";
-import DataTable from "../../components/DataTable";
-import ListCard from "../../components/ListCard";
-import Avatar from "../../components/Avatar";
-import Input from "../../components/Input";
+import { Link } from "react-router-dom";
+import Modal from "../../components/Modal";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface Employee {
-  id: string;
-  name: string;
-  avatar: string;
-  position: string;
-  department: string;
-  email: string;
-  status: "Active" | "On Leave" | "Inactive";
-}
-
-// ---------------------------------------------------------------------------
-// Data
-// ---------------------------------------------------------------------------
-
-const employees: Employee[] = [
-  {
-    id: "EMP-001",
-    name: "Sarah Chen",
-    avatar: "SC",
-    position: "Senior Frontend Developer",
-    department: "Engineering",
-    email: "sarah.chen@teamtrack.io",
-    status: "Active",
-  },
-  {
-    id: "EMP-002",
-    name: "Marcus Johnson",
-    avatar: "MJ",
-    position: "Product Designer",
-    department: "Design",
-    email: "marcus.j@teamtrack.io",
-    status: "Active",
-  },
-  {
-    id: "EMP-003",
-    name: "Priya Patel",
-    avatar: "PP",
-    position: "Backend Engineer",
-    department: "Engineering",
-    email: "priya.p@teamtrack.io",
-    status: "On Leave",
-  },
-  {
-    id: "EMP-004",
-    name: "David Kim",
-    avatar: "DK",
-    position: "Marketing Manager",
-    department: "Marketing",
-    email: "david.kim@teamtrack.io",
-    status: "Active",
-  },
-  {
-    id: "EMP-005",
-    name: "Elena Rodriguez",
-    avatar: "ER",
-    position: "HR Specialist",
-    department: "HR",
-    email: "elena.r@teamtrack.io",
-    status: "Active",
-  },
-  {
-    id: "EMP-006",
-    name: "James Wright",
-    avatar: "JW",
-    position: "DevOps Engineer",
-    department: "Engineering",
-    email: "james.w@teamtrack.io",
-    status: "Inactive",
-  },
-  {
-    id: "EMP-007",
-    name: "Aisha Mohammed",
-    avatar: "AM",
-    position: "UX Researcher",
-    department: "Design",
-    email: "aisha.m@teamtrack.io",
-    status: "Active",
-  },
-  {
-    id: "EMP-008",
-    name: "Liam O'Brien",
-    avatar: "LO",
-    position: "Financial Analyst",
-    department: "Finance",
-    email: "liam.ob@teamtrack.io",
-    status: "Active",
-  },
+const employees = [
+  { id: "1", name: "Sarah Chen", position: "Senior Frontend Engineer", dept: "Engineering", email: "s.chen@teamtrack.io", hire: "Jan 15, 2021", status: "active", initials: "SC", color: "#BFFF00" },
+  { id: "2", name: "Marcus Johnson", position: "Backend Engineer", dept: "Engineering", email: "m.johnson@teamtrack.io", hire: "Mar 8, 2021", status: "active", initials: "MJ", color: "#00C2FF" },
+  { id: "3", name: "Aisha Patel", position: "UX Designer", dept: "Design", email: "a.patel@teamtrack.io", hire: "Jun 12, 2021", status: "on_leave", initials: "AP", color: "#FFB800" },
+  { id: "4", name: "Tom Wilson", position: "DevOps Engineer", dept: "Operations", email: "t.wilson@teamtrack.io", hire: "Sep 20, 2021", status: "active", initials: "TW", color: "#7B61FF" },
+  { id: "5", name: "Elena Rossi", position: "Finance Manager", dept: "Finance", email: "e.rossi@teamtrack.io", hire: "Feb 3, 2022", status: "active", initials: "ER", color: "#FF5C33" },
+  { id: "6", name: "David Kim", position: "HR Business Partner", dept: "HR", email: "d.kim@teamtrack.io", hire: "Apr 18, 2022", status: "active", initials: "DK", color: "#BFFF00" },
+  { id: "7", name: "Lisa Park", position: "Marketing Lead", dept: "Marketing", email: "l.park@teamtrack.io", hire: "Jul 5, 2022", status: "active", initials: "LP", color: "#00C2FF" },
+  { id: "8", name: "James Lee", position: "Product Manager", dept: "Operations", email: "j.lee@teamtrack.io", hire: "Nov 14, 2022", status: "active", initials: "JL", color: "#FFB800" },
 ];
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-const statusVariant: Record<Employee["status"], string> = {
-  Active: "bg-[#BFFF00] text-black",
-  "On Leave": "bg-[#FFB800] text-black",
-  Inactive: "bg-[#FF5C33] text-black",
-};
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+const filters = ["All", "Active", "On Leave", "Inactive"];
 
 export default function TeamDirectory() {
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
+  const [addOpen, setAddOpen] = useState(false);
 
-  const filtered = employees.filter(
-    (e) =>
-      e.name.toLowerCase().includes(search.toLowerCase()) ||
-      e.position.toLowerCase().includes(search.toLowerCase()) ||
-      e.department.toLowerCase().includes(search.toLowerCase()) ||
-      e.email.toLowerCase().includes(search.toLowerCase()),
-  );
-
-  // ---- Desktop table columns ------------------------------------------------
-
-  const columns = [
-    {
-      key: "employee" as const,
-      header: "Employee",
-      render: (row: Employee) => (
-        <div className="flex items-center gap-3">
-          <Avatar initials={row.avatar} size="sm" />
-          <div>
-            <p className="font-primary text-sm font-medium text-foreground">
-              {row.name}
-            </p>
-            <p className="font-secondary text-xs text-muted-foreground">
-              {row.id}
-            </p>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "position" as const,
-      header: "Position",
-      render: (row: Employee) => (
-        <span className="font-secondary text-sm text-foreground">
-          {row.position}
-        </span>
-      ),
-    },
-    {
-      key: "department" as const,
-      header: "Department",
-      render: (row: Employee) => (
-        <span className="font-secondary text-sm text-muted-foreground">
-          {row.department}
-        </span>
-      ),
-    },
-    {
-      key: "email" as const,
-      header: "Email",
-      render: (row: Employee) => (
-        <span className="font-secondary text-sm text-muted-foreground">
-          {row.email}
-        </span>
-      ),
-    },
-    {
-      key: "status" as const,
-      header: "Status",
-      render: (row: Employee) => (
-        <Badge className={statusVariant[row.status]}>{row.status}</Badge>
-      ),
-    },
-    {
-      key: "actions" as const,
-      header: "Actions",
-      render: (_row: Employee) => (
-        <Button variant="ghost" size="sm">
-          <Eye className="mr-1 h-4 w-4" />
-          View
-        </Button>
-      ),
-    },
-  ];
-
-  // ---- Render ---------------------------------------------------------------
+  const filtered = employees.filter(e => {
+    const matchesSearch = e.name.toLowerCase().includes(search.toLowerCase()) || e.dept.toLowerCase().includes(search.toLowerCase());
+    const matchesFilter = filter === "All" || (filter === "Active" && e.status === "active") || (filter === "On Leave" && e.status === "on_leave");
+    return matchesSearch && matchesFilter;
+  });
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
+    <div className="py-8 px-12 min-h-full">
       {/* Header */}
-      <PageHeader
-        title="Team Directory"
-        action={
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Employee
-          </Button>
-        }
-      />
-
-      {/* Search */}
-      <div className="mt-6">
-        <div className="relative max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search employees..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="font-secondary text-[28px] font-bold text-foreground">Team Directory</h1>
+          <p className="font-primary text-[13px] text-muted-foreground mt-1">{employees.length} members across all departments</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 bg-card border border-border px-4 py-2.5 font-primary text-[13px] text-muted-foreground hover:text-foreground hover:bg-[#0A0A0A] transition-colors">
+            <Download size={14} />
+            Export
+          </button>
+          <button onClick={() => setAddOpen(true)} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 font-primary text-[13px] font-bold hover:opacity-90 transition-opacity">
+            <Plus size={14} />
+            Add Member
+          </button>
         </div>
       </div>
 
-      {/* Desktop Table */}
-      <div className="mt-6 hidden md:block">
-        <DataTable<Employee> columns={columns} data={filtered} />
-      </div>
-
-      {/* Mobile List */}
-      <div className="mt-6 flex flex-col gap-3 md:hidden">
-        {filtered.map((emp) => (
-          <ListCard key={emp.id}>
-            <div className="flex items-start gap-3">
-              <Avatar initials={emp.avatar} size="md" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-primary text-sm font-medium text-foreground truncate">
-                    {emp.name}
-                  </p>
-                  <Badge className={statusVariant[emp.status]}>
-                    {emp.status}
-                  </Badge>
-                </div>
-                <p className="font-secondary mt-0.5 text-xs text-muted-foreground">
-                  {emp.position}
-                </p>
-                <div className="mt-2 flex flex-col gap-1 text-xs text-muted-foreground font-secondary">
-                  <span className="flex items-center gap-1.5">
-                    <Building2 className="h-3 w-3" />
-                    {emp.department}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Mail className="h-3 w-3" />
-                    {emp.email}
-                  </span>
-                </div>
-                <div className="mt-3">
-                  <Button variant="ghost" size="sm" className="w-full">
-                    <Eye className="mr-1 h-4 w-4" />
-                    View Profile
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </ListCard>
-        ))}
-      </div>
-
-      {/* Footer / pagination hint */}
-      <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
-        <p className="font-secondary text-sm text-muted-foreground">
-          Showing {filtered.length} of 48 employees
-        </p>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" disabled>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="font-primary text-sm text-foreground">1</span>
-          <Button variant="outline" size="sm">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+      {/* Filters + Search */}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="relative flex-1 max-w-sm">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-card border border-border pl-9 pr-4 py-2.5 font-primary text-[13px] text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors"
+            placeholder="Search by name or department..." />
+        </div>
+        <div className="flex items-center gap-1">
+          {filters.map(f => (
+            <button key={f} onClick={() => setFilter(f)}
+              className={`px-4 py-2 font-primary text-[12px] transition-colors border ${filter === f ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:text-foreground hover:bg-[#0A0A0A]"}`}>
+              {f}
+            </button>
+          ))}
         </div>
       </div>
+
+      {/* Table */}
+      <div className="bg-card border border-border">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-[#0A0A0A] border-b border-border">
+                {["Employee", "Position", "Department", "Email", "Hire Date", "Status", ""].map((h, i) => (
+                  <th key={i} className="px-6 py-4 text-left font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((emp, i) => (
+                <tr key={emp.id} className={`border-b border-border last:border-b-0 ${i % 2 === 0 ? "bg-card" : "bg-[#0D0D0D]"} hover:bg-muted/10 transition-colors`}>
+                  <td className="px-6 py-4">
+                    <Link to={`/team/profile/${emp.id}`} className="flex items-center gap-3 hover:opacity-80">
+                      <div className="w-9 h-9 flex-shrink-0 flex items-center justify-center text-[11px] font-bold font-primary" style={{ background: `${emp.color}20`, color: emp.color }}>
+                        {emp.initials}
+                      </div>
+                      <span className="font-primary text-[13px] font-semibold text-foreground hover:text-primary transition-colors">{emp.name}</span>
+                    </Link>
+                  </td>
+                  <td className="px-6 py-4 font-primary text-[13px] text-muted-foreground">{emp.position}</td>
+                  <td className="px-6 py-4 font-primary text-[13px] text-muted-foreground">{emp.dept}</td>
+                  <td className="px-6 py-4 font-primary text-[12px] text-muted-foreground">{emp.email}</td>
+                  <td className="px-6 py-4 font-primary text-[12px] text-muted-foreground">{emp.hire}</td>
+                  <td className="px-6 py-4"><Badge color={emp.status === "active" ? "lime" : emp.status === "on_leave" ? "pending" : "gray"} label={emp.status.replace("_", " ")} /></td>
+                  <td className="px-6 py-4">
+                    <button className="text-muted-foreground hover:text-foreground transition-colors"><MoreHorizontal size={16} /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Add Member Modal */}
+      <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Add Team Member"
+        footer={
+          <>
+            <button onClick={() => setAddOpen(false)} className="bg-card border border-border px-5 py-2.5 font-primary text-[13px] text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+            <button className="bg-primary text-primary-foreground px-5 py-2.5 font-primary text-[13px] font-bold hover:opacity-90">Save Member</button>
+          </>
+        }>
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2"><label className="font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">First Name</label><input type="text" className="bg-[#0A0A0A] border border-border px-3.5 py-3 font-primary text-[13px] text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors" placeholder="John" /></div>
+            <div className="flex flex-col gap-2"><label className="font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">Last Name</label><input type="text" className="bg-[#0A0A0A] border border-border px-3.5 py-3 font-primary text-[13px] text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors" placeholder="Doe" /></div>
+          </div>
+          <div className="flex flex-col gap-2"><label className="font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">Work Email</label><input type="email" className="bg-[#0A0A0A] border border-border px-3.5 py-3 font-primary text-[13px] text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors" placeholder="you@company.com" /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2"><label className="font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">Role</label><select className="bg-[#0A0A0A] border border-border px-3.5 py-3 font-primary text-[13px] text-foreground outline-none focus:border-primary transition-colors"><option>Member</option><option>Manager</option><option>Admin</option><option>Viewer</option></select></div>
+            <div className="flex flex-col gap-2"><label className="font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">Department</label><select className="bg-[#0A0A0A] border border-border px-3.5 py-3 font-primary text-[13px] text-foreground outline-none focus:border-primary transition-colors"><option>Engineering</option><option>Design</option><option>Marketing</option><option>HR</option><option>Finance</option><option>Operations</option></select></div>
+          </div>
+          <div className="flex flex-col gap-2"><label className="font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">Start Date</label><input type="date" className="bg-[#0A0A0A] border border-border px-3.5 py-3 font-primary text-[13px] text-foreground outline-none focus:border-primary transition-colors" /></div>
+        </div>
+      </Modal>
     </div>
   );
 }

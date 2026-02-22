@@ -1,443 +1,207 @@
 import { useState } from "react";
-import {
-  Calendar,
-  Clock,
-  Heart,
-  Award,
-  TrendingUp,
-  Users,
-  ArrowUpRight,
-  ArrowDownRight,
-} from "lucide-react";
-import PageHeader from "../../components/PageHeader";
-import Badge from "../../components/Badge";
+import { Link } from "react-router-dom";
+import { Plus, Calendar, CheckCircle, XCircle, Clock } from "lucide-react";
 import MetricCard from "../../components/MetricCard";
-import DataTable from "../../components/DataTable";
-import ListCard from "../../components/ListCard";
+import Badge from "../../components/Badge";
+import Modal from "../../components/Modal";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface LeaveBalance {
-  label: string;
-  used: number;
-  total: number;
-  icon: React.ReactNode;
-  trend: "up" | "down";
-  trendValue: string;
-}
-
-interface DepartmentLeave {
-  department: string;
-  annual: number;
-  sick: number;
-  personal: number;
-  compOff: number;
-}
-
-interface RecentRequest {
-  id: string;
-  employee: string;
-  avatar: string;
-  type: string;
-  from: string;
-  to: string;
-  status: "Approved" | "Pending" | "Rejected";
-}
-
-// ---------------------------------------------------------------------------
-// Mock Data
-// ---------------------------------------------------------------------------
-
-const leaveBalances: LeaveBalance[] = [
-  {
-    label: "Annual Leave",
-    used: 18,
-    total: 24,
-    icon: <Calendar className="h-5 w-5 text-[#BFFF00]" />,
-    trend: "up",
-    trendValue: "+3 this month",
-  },
-  {
-    label: "Sick Leave",
-    used: 3,
-    total: 10,
-    icon: <Heart className="h-5 w-5 text-[#FF5C33]" />,
-    trend: "down",
-    trendValue: "-1 this month",
-  },
-  {
-    label: "Personal",
-    used: 2,
-    total: 5,
-    icon: <Clock className="h-5 w-5 text-[#00C2FF]" />,
-    trend: "up",
-    trendValue: "+1 this month",
-  },
-  {
-    label: "Comp Off",
-    used: 1,
-    total: 3,
-    icon: <Award className="h-5 w-5 text-[#7B61FF]" />,
-    trend: "down",
-    trendValue: "No change",
-  },
+const leaveBalances = [
+  { label: "Annual Leave", used: 12, total: 20, color: "#BFFF00" },
+  { label: "Sick Leave", used: 3, total: 10, color: "#FF5C33" },
+  { label: "Personal Days", used: 1, total: 5, color: "#00C2FF" },
+  { label: "Comp Time", used: 2, total: 5, color: "#7B61FF" },
 ];
 
-const departmentLeaveData: DepartmentLeave[] = [
-  { department: "Engineering", annual: 42, sick: 8, personal: 6, compOff: 3 },
-  { department: "Design", annual: 18, sick: 4, personal: 3, compOff: 1 },
-  { department: "Marketing", annual: 22, sick: 6, personal: 4, compOff: 2 },
-  { department: "Sales", annual: 30, sick: 5, personal: 5, compOff: 2 },
-  { department: "HR", annual: 10, sick: 2, personal: 2, compOff: 1 },
+const upcomingLeave = [
+  { name: "Sarah Chen", type: "Annual Leave", start: "Mar 1", end: "Mar 5", days: 5, status: "approved" },
+  { name: "Marcus Johnson", type: "Sick Leave", start: "Feb 28", end: "Feb 28", days: 1, status: "approved" },
+  { name: "Aisha Patel", type: "Annual Leave", start: "Mar 10", end: "Mar 14", days: 5, status: "pending" },
+  { name: "Tom Wilson", type: "Personal Day", start: "Mar 4", end: "Mar 4", days: 1, status: "approved" },
 ];
 
-const recentRequests: RecentRequest[] = [
-  {
-    id: "LR-001",
-    employee: "Sarah Chen",
-    avatar: "SC",
-    type: "Annual",
-    from: "Nov 18, 2025",
-    to: "Nov 22, 2025",
-    status: "Approved",
-  },
-  {
-    id: "LR-002",
-    employee: "Marcus Rivera",
-    avatar: "MR",
-    type: "Sick",
-    from: "Nov 20, 2025",
-    to: "Nov 21, 2025",
-    status: "Pending",
-  },
-  {
-    id: "LR-003",
-    employee: "Aisha Patel",
-    avatar: "AP",
-    type: "Personal",
-    from: "Nov 25, 2025",
-    to: "Nov 25, 2025",
-    status: "Approved",
-  },
-  {
-    id: "LR-004",
-    employee: "James O'Brien",
-    avatar: "JO",
-    type: "Comp Off",
-    from: "Nov 28, 2025",
-    to: "Nov 29, 2025",
-    status: "Rejected",
-  },
-  {
-    id: "LR-005",
-    employee: "Lena Kowalski",
-    avatar: "LK",
-    type: "Annual",
-    from: "Dec 01, 2025",
-    to: "Dec 05, 2025",
-    status: "Pending",
-  },
+const teamAvailability = [
+  { name: "Sarah Chen", status: "available", dept: "Engineering", color: "#BFFF00" },
+  { name: "Marcus Johnson", status: "available", dept: "Engineering", color: "#00C2FF" },
+  { name: "Aisha Patel", status: "on_leave", dept: "Design", color: "#FFB800" },
+  { name: "Tom Wilson", status: "available", dept: "Operations", color: "#7B61FF" },
+  { name: "Elena Rossi", status: "available", dept: "Finance", color: "#FF5C33" },
+  { name: "David Kim", status: "on_leave", dept: "HR", color: "#BFFF00" },
 ];
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+const recentRequests = [
+  { type: "Annual Leave", start: "Mar 1", end: "Mar 5", duration: "5 days", status: "pending", reason: "Family vacation" },
+  { type: "Sick Leave", start: "Feb 20", end: "Feb 21", duration: "2 days", status: "approved", reason: "Medical" },
+  { type: "Personal Day", start: "Feb 15", end: "Feb 15", duration: "1 day", status: "approved", reason: "Personal" },
+  { type: "Comp Time", start: "Feb 10", end: "Feb 11", duration: "2 days", status: "rejected", reason: "Overtime compensation" },
+];
 
-const statusVariant: Record<RecentRequest["status"], string> = {
-  Approved: "bg-[#BFFF00]/10 text-[#BFFF00]",
-  Pending: "bg-[#FFB800]/10 text-[#FFB800]",
-  Rejected: "bg-[#FF5C33]/10 text-[#FF5C33]",
-};
-
-const leaveTypeColor: Record<string, string> = {
-  Annual: "bg-[#BFFF00]",
-  Sick: "bg-[#FF5C33]",
-  Personal: "bg-[#00C2FF]",
-  "Comp Off": "bg-[#7B61FF]",
-};
-
-function ProgressBar({ used, total }: { used: number; total: number }) {
-  const pct = Math.round((used / total) * 100);
-  return (
-    <div className="mt-3 space-y-1.5">
-      <div className="flex items-center justify-between text-xs font-[Inter]">
-        <span className="text-[#6e6e6e]">
-          {used}/{total} days used
-        </span>
-        <span className="text-white">{pct}%</span>
-      </div>
-      <div className="h-1.5 w-full rounded-none bg-[#1A1A1A]">
-        <div
-          className="h-full rounded-none bg-[#BFFF00] transition-all duration-500"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
-  );
+function StatusIcon({ status }: { status: string }) {
+  if (status === "approved") return <CheckCircle size={14} className="text-primary" />;
+  if (status === "rejected") return <XCircle size={14} className="text-destructive" />;
+  return <Clock size={14} className="text-warning" />;
 }
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 
 export default function LeaveOverview() {
-  const [isMobile] = useState(() =>
-    typeof window !== "undefined" ? window.innerWidth < 768 : false,
-  );
-
-  // ---- Desktop table columns ----
-  const columns = [
-    {
-      header: "Employee",
-      accessor: "employee" as const,
-      render: (row: RecentRequest) => (
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-none bg-[#1A1A1A] text-xs font-semibold text-white font-[JetBrains_Mono]">
-            {row.avatar}
-          </div>
-          <span className="text-sm font-medium text-white font-[Inter]">
-            {row.employee}
-          </span>
-        </div>
-      ),
-    },
-    {
-      header: "Type",
-      accessor: "type" as const,
-      render: (row: RecentRequest) => (
-        <div className="flex items-center gap-2">
-          <span
-            className={`inline-block h-2 w-2 rounded-none ${leaveTypeColor[row.type] ?? "bg-white"}`}
-          />
-          <span className="text-sm text-[#6e6e6e] font-[Inter]">
-            {row.type}
-          </span>
-        </div>
-      ),
-    },
-    {
-      header: "From",
-      accessor: "from" as const,
-      render: (row: RecentRequest) => (
-        <span className="text-sm text-[#6e6e6e] font-[JetBrains_Mono]">
-          {row.from}
-        </span>
-      ),
-    },
-    {
-      header: "To",
-      accessor: "to" as const,
-      render: (row: RecentRequest) => (
-        <span className="text-sm text-[#6e6e6e] font-[JetBrains_Mono]">
-          {row.to}
-        </span>
-      ),
-    },
-    {
-      header: "Status",
-      accessor: "status" as const,
-      render: (row: RecentRequest) => (
-        <Badge className={`rounded-none px-2.5 py-1 text-xs font-medium font-[Inter] ${statusVariant[row.status]}`}>
-          {row.status}
-        </Badge>
-      ),
-    },
-  ];
-
-  // ---- Max bar width for distribution chart ----
-  const maxTotal = Math.max(
-    ...departmentLeaveData.map(
-      (d) => d.annual + d.sick + d.personal + d.compOff,
-    ),
-  );
+  const [applyOpen, setApplyOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#000] text-white font-[Inter]">
-      <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
-        {/* Header */}
-        <PageHeader
-          title="Leave Management"
-          subtitle="Overview & balances"
-        />
-
-        {/* Metric Cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {leaveBalances.map((lb) => (
-            <MetricCard key={lb.label}>
-              <div className="flex items-start justify-between">
-                <div className="flex h-10 w-10 items-center justify-center rounded-none bg-[#0A0A0A] border border-[#1A1A1A]">
-                  {lb.icon}
-                </div>
-                <div
-                  className={`flex items-center gap-1 text-xs font-medium font-[Inter] ${
-                    lb.trend === "up" ? "text-[#BFFF00]" : "text-[#FF5C33]"
-                  }`}
-                >
-                  {lb.trend === "up" ? (
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  ) : (
-                    <ArrowDownRight className="h-3.5 w-3.5" />
-                  )}
-                  {lb.trendValue}
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <p className="text-xs uppercase tracking-wider text-[#6e6e6e] font-[JetBrains_Mono]">
-                  {lb.label}
-                </p>
-                <p className="mt-1 text-2xl font-bold text-white font-[JetBrains_Mono]">
-                  {lb.used}
-                  <span className="text-base font-normal text-[#6e6e6e]">
-                    /{lb.total}
-                  </span>
-                </p>
-              </div>
-
-              <ProgressBar used={lb.used} total={lb.total} />
-            </MetricCard>
-          ))}
+    <div className="py-8 px-12 min-h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="font-secondary text-[28px] font-bold text-foreground">Leave Management</h1>
+          <p className="font-primary text-[13px] text-muted-foreground mt-1">Track and manage your time off</p>
         </div>
+        <div className="flex items-center gap-3">
+          <Link to="/leave/requests" className="bg-card border border-border px-4 py-2.5 font-primary text-[13px] text-muted-foreground hover:text-foreground hover:bg-[#0A0A0A] transition-colors">
+            My Requests
+          </Link>
+          <button onClick={() => setApplyOpen(true)} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 font-primary text-[13px] font-bold hover:opacity-90 transition-opacity">
+            <Plus size={14} />
+            Apply Leave
+          </button>
+        </div>
+      </div>
 
-        {/* Leave Distribution */}
-        <div className="rounded-none border border-[#1A1A1A] bg-[#111] p-6">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-white font-[Inter]">
-                Leave Distribution
-              </h2>
-              <p className="mt-0.5 text-sm text-[#6e6e6e] font-[Inter]">
-                Department-wise leave usage
-              </p>
+      {/* Leave Balance KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {leaveBalances.map((lb) => (
+          <div key={lb.label} className="bg-card border border-border p-6">
+            <p className="font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground mb-4">{lb.label}</p>
+            <div className="flex items-end justify-between mb-3">
+              <span className="font-secondary text-[32px] font-bold leading-none" style={{ color: lb.color }}>{lb.used}</span>
+              <span className="font-primary text-[13px] text-muted-foreground">/ {lb.total} days</span>
             </div>
-            <div className="flex items-center gap-1 text-xs text-[#6e6e6e] font-[Inter]">
-              <TrendingUp className="h-4 w-4" />
-              <span>Current quarter</span>
+            <div className="h-1.5 bg-border">
+              <div className="h-1.5" style={{ width: `${(lb.used / lb.total) * 100}%`, background: lb.color }} />
             </div>
+            <p className="font-primary text-[11px] text-muted-foreground mt-2">{lb.total - lb.used} days remaining</p>
           </div>
+        ))}
+      </div>
 
-          {/* Stacked bar chart (CSS-only) */}
-          <div className="space-y-4">
-            {departmentLeaveData.map((dept) => {
-              const total =
-                dept.annual + dept.sick + dept.personal + dept.compOff;
-              return (
-                <div key={dept.department} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-sm font-[Inter]">
-                    <span className="text-white">{dept.department}</span>
-                    <span className="text-[#6e6e6e] font-[JetBrains_Mono]">
-                      {total} days
-                    </span>
-                  </div>
-                  <div className="flex h-3 w-full overflow-hidden rounded-none bg-[#0A0A0A]">
-                    <div
-                      className="h-full bg-[#BFFF00] transition-all duration-500"
-                      style={{
-                        width: `${(dept.annual / maxTotal) * 100}%`,
-                      }}
-                    />
-                    <div
-                      className="h-full bg-[#FF5C33] transition-all duration-500"
-                      style={{
-                        width: `${(dept.sick / maxTotal) * 100}%`,
-                      }}
-                    />
-                    <div
-                      className="h-full bg-[#00C2FF] transition-all duration-500"
-                      style={{
-                        width: `${(dept.personal / maxTotal) * 100}%`,
-                      }}
-                    />
-                    <div
-                      className="h-full bg-[#7B61FF] transition-all duration-500"
-                      style={{
-                        width: `${(dept.compOff / maxTotal) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+      {/* Middle Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+        {/* Upcoming Leave */}
+        <div className="lg:col-span-2 bg-card border border-border">
+          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+            <h2 className="font-secondary text-[16px] font-bold text-foreground">Upcoming Leave</h2>
+            <Link to="/leave/calendar" className="font-primary text-[12px] text-primary hover:opacity-80">View Calendar</Link>
           </div>
-
-          {/* Legend */}
-          <div className="mt-6 flex flex-wrap gap-4 border-t border-[#1A1A1A] pt-4">
-            {[
-              { label: "Annual", color: "bg-[#BFFF00]" },
-              { label: "Sick", color: "bg-[#FF5C33]" },
-              { label: "Personal", color: "bg-[#00C2FF]" },
-              { label: "Comp Off", color: "bg-[#7B61FF]" },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center gap-2 text-xs text-[#6e6e6e] font-[Inter]"
-              >
-                <span
-                  className={`inline-block h-2.5 w-2.5 rounded-none ${item.color}`}
-                />
-                {item.label}
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[#0A0A0A] border-b border-border">
+                  {["Employee", "Type", "Period", "Days", "Status"].map(h => (
+                    <th key={h} className="px-6 py-3 text-left font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {upcomingLeave.map((row, i) => (
+                  <tr key={i} className={`border-b border-border last:border-b-0 ${i % 2 === 0 ? "bg-card" : "bg-[#0D0D0D]"}`}>
+                    <td className="px-6 py-4 font-primary text-[13px] font-semibold text-foreground">{row.name}</td>
+                    <td className="px-6 py-4 font-primary text-[13px] text-muted-foreground">{row.type}</td>
+                    <td className="px-6 py-4 font-primary text-[13px] text-muted-foreground">{row.start} – {row.end}</td>
+                    <td className="px-6 py-4 font-primary text-[13px] text-foreground">{row.days}d</td>
+                    <td className="px-6 py-4"><Badge color={row.status} label={row.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* Recent Leave Requests */}
-        <div className="rounded-none border border-[#1A1A1A] bg-[#111] p-6">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-white font-[Inter]">
-                Recent Leave Requests
-              </h2>
-              <p className="mt-0.5 text-sm text-[#6e6e6e] font-[Inter]">
-                Latest 5 requests across the organisation
-              </p>
-            </div>
-            <div className="flex items-center gap-1 text-xs text-[#6e6e6e] font-[Inter]">
-              <Users className="h-4 w-4" />
-              <span>{recentRequests.length} requests</span>
-            </div>
+        {/* Team Availability */}
+        <div className="bg-card border border-border">
+          <div className="px-6 py-4 border-b border-border">
+            <h2 className="font-secondary text-[16px] font-bold text-foreground">Team Availability</h2>
           </div>
-
-          {/* Desktop */}
-          <div className="hidden md:block">
-            <DataTable columns={columns} data={recentRequests} />
-          </div>
-
-          {/* Mobile */}
-          <div className="space-y-3 md:hidden">
-            {recentRequests.map((req) => (
-              <ListCard key={req.id}>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-none bg-[#0A0A0A] border border-[#1A1A1A] text-xs font-semibold text-white font-[JetBrains_Mono]">
-                      {req.avatar}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-white font-[Inter]">
-                        {req.employee}
-                      </p>
-                      <p className="text-xs text-[#6e6e6e] font-[Inter]">
-                        {req.type} Leave
-                      </p>
-                    </div>
-                  </div>
-                  <Badge
-                    className={`rounded-none px-2 py-0.5 text-xs font-medium font-[Inter] ${statusVariant[req.status]}`}
-                  >
-                    {req.status}
-                  </Badge>
+          <div className="divide-y divide-border">
+            {teamAvailability.map((m, i) => (
+              <div key={i} className="px-6 py-3 flex items-center gap-3 hover:bg-[#0A0A0A] transition-colors">
+                <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center text-[10px] font-bold font-primary" style={{ background: `${m.color}20`, color: m.color }}>
+                  {m.name.split(" ").map(n => n[0]).join("")}
                 </div>
-                <div className="mt-3 flex items-center gap-2 text-xs text-[#6e6e6e] font-[JetBrains_Mono]">
-                  <Calendar className="h-3.5 w-3.5" />
-                  {req.from} &mdash; {req.to}
+                <div className="flex-1 min-w-0">
+                  <p className="font-primary text-[12px] text-foreground truncate">{m.name}</p>
+                  <p className="font-primary text-[10px] text-muted-foreground">{m.dept}</p>
                 </div>
-              </ListCard>
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${m.status === "available" ? "bg-primary" : "bg-warning"}`} />
+              </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Recent Leave Requests */}
+      <div className="bg-card border border-border">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+          <h2 className="font-secondary text-[16px] font-bold text-foreground">My Recent Requests</h2>
+          <Link to="/leave/requests" className="font-primary text-[12px] text-primary hover:opacity-80">View all</Link>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-[#0A0A0A] border-b border-border">
+                {["Type", "Start Date", "End Date", "Duration", "Status", "Reason"].map(h => (
+                  <th key={h} className="px-6 py-3 text-left font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {recentRequests.map((row, i) => (
+                <tr key={i} className={`border-b border-border last:border-b-0 ${i % 2 === 0 ? "bg-card" : "bg-[#0D0D0D]"}`}>
+                  <td className="px-6 py-4 font-primary text-[13px] font-semibold text-foreground">{row.type}</td>
+                  <td className="px-6 py-4 font-primary text-[13px] text-muted-foreground">{row.start}</td>
+                  <td className="px-6 py-4 font-primary text-[13px] text-muted-foreground">{row.end}</td>
+                  <td className="px-6 py-4 font-primary text-[13px] text-foreground">{row.duration}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-1.5"><StatusIcon status={row.status} /><Badge color={row.status} label={row.status} /></div>
+                  </td>
+                  <td className="px-6 py-4 font-primary text-[12px] text-muted-foreground">{row.reason}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Apply Leave Modal */}
+      <Modal open={applyOpen} onClose={() => setApplyOpen(false)} title="Apply for Leave"
+        footer={
+          <>
+            <button onClick={() => setApplyOpen(false)} className="bg-card border border-border px-5 py-2.5 font-primary text-[13px] text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+            <button className="bg-primary text-primary-foreground px-5 py-2.5 font-primary text-[13px] font-bold hover:opacity-90 transition-opacity">Submit Request</button>
+          </>
+        }>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">Leave Type</label>
+            <select className="bg-[#0A0A0A] border border-border px-3.5 py-3 font-primary text-[13px] text-foreground outline-none focus:border-primary transition-colors">
+              <option>Annual Leave</option><option>Sick Leave</option><option>Personal Day</option><option>Comp Time</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2">
+              <label className="font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">Start Date</label>
+              <input type="date" className="bg-[#0A0A0A] border border-border px-3.5 py-3 font-primary text-[13px] text-foreground outline-none focus:border-primary transition-colors" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">End Date</label>
+              <input type="date" className="bg-[#0A0A0A] border border-border px-3.5 py-3 font-primary text-[13px] text-foreground outline-none focus:border-primary transition-colors" />
+            </div>
+          </div>
+          <div className="bg-[#0A0A0A] border border-primary px-4 py-3 flex items-center justify-between">
+            <span className="font-primary text-[12px] text-muted-foreground">Duration</span>
+            <span className="font-secondary text-[16px] font-bold text-primary">5 days</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">Reason</label>
+            <textarea rows={3} className="bg-[#0A0A0A] border border-border px-3.5 py-3 font-primary text-[13px] text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors resize-none" placeholder="Brief description..." />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

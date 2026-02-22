@@ -1,303 +1,140 @@
-import React from "react";
-import {
-  FolderKanban,
-  ListChecks,
-  CheckCircle2,
-  AlertTriangle,
-  Plus,
-  Calendar,
-} from "lucide-react";
-import PageHeader from "../../components/PageHeader";
+import { useState } from "react";
+import { Plus, Search, Filter, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import Badge from "../../components/Badge";
-import Button from "../../components/Button";
 import MetricCard from "../../components/MetricCard";
-import Avatar from "../../components/Avatar";
+import Modal from "../../components/Modal";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface ProjectMember {
-  name: string;
-  avatar?: string;
-}
-
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  progress: number;
-  status: "Active" | "On Hold" | "Completed";
-  dueDate: string;
-  members: ProjectMember[];
-}
-
-// ---------------------------------------------------------------------------
-// Data
-// ---------------------------------------------------------------------------
-
-const metrics = [
-  {
-    label: "Active Projects",
-    value: "12",
-    icon: FolderKanban,
-    accent: "text-[#BFFF00]",
-  },
-  {
-    label: "Total Tasks",
-    value: "156",
-    icon: ListChecks,
-    accent: "text-[#00C2FF]",
-  },
-  {
-    label: "Completed",
-    value: "89",
-    icon: CheckCircle2,
-    accent: "text-[#BFFF00]",
-  },
-  {
-    label: "Overdue",
-    value: "7",
-    icon: AlertTriangle,
-    accent: "text-[#FF5C33]",
-  },
+const projects = [
+  { id: "1", name: "Website Redesign", desc: "Complete overhaul of company website", status: "active", priority: "high", progress: 65, budget: "$50K", spent: "$32.5K", start: "Jan 15", end: "Jun 30", members: ["SC", "MJ", "AP"], color: "#BFFF00" },
+  { id: "2", name: "Mobile App", desc: "iOS and Android mobile application", status: "active", priority: "high", progress: 45, budget: "$80K", spent: "$36K", start: "Feb 1", end: "Aug 31", members: ["TW", "ER", "DK"], color: "#00C2FF" },
+  { id: "3", name: "API Integration", desc: "Third-party API integrations", status: "active", priority: "medium", progress: 78, budget: "$30K", spent: "$23.4K", start: "Jan 10", end: "May 15", members: ["MJ", "SC"], color: "#FFB800" },
+  { id: "4", name: "Design System", desc: "Unified design system and component library", status: "active", priority: "high", progress: 82, budget: "$20K", spent: "$16.4K", start: "Jan 20", end: "Apr 30", members: ["AP", "ER"], color: "#7B61FF" },
+  { id: "5", name: "Customer Portal", desc: "Self-service customer portal", status: "active", priority: "medium", progress: 38, budget: "$45K", spent: "$17.1K", start: "Feb 15", end: "Jul 31", members: ["DK", "TW", "SC"], color: "#FF5C33" },
+  { id: "6", name: "Analytics Dashboard", desc: "Business intelligence dashboard", status: "active", priority: "low", progress: 22, budget: "$35K", spent: "$7.7K", start: "Mar 1", end: "Jun 15", members: ["SC", "MJ"], color: "#BFFF00" },
+  { id: "7", name: "Security Audit", desc: "Comprehensive security review", status: "completed", priority: "high", progress: 100, budget: "$25K", spent: "$24.8K", start: "Nov 1", end: "Jan 31", members: ["ER", "DK"], color: "#6e6e6e" },
+  { id: "8", name: "Marketing Campaign", desc: "Q1 marketing initiatives", status: "completed", priority: "medium", progress: 100, budget: "$18K", spent: "$17.2K", start: "Dec 1", end: "Mar 31", members: ["AP", "TW"], color: "#6e6e6e" },
 ];
 
-const projects: Project[] = [
-  {
-    id: "p1",
-    name: "TeamTrack Pro v2.0",
-    description: "Major platform upgrade with new analytics dashboard and performance improvements.",
-    progress: 72,
-    status: "Active",
-    dueDate: "Dec 15, 2025",
-    members: [
-      { name: "Alice Johnson" },
-      { name: "Bob Smith" },
-      { name: "Carol Lee" },
-    ],
-  },
-  {
-    id: "p2",
-    name: "Mobile App Redesign",
-    description: "Complete redesign of the mobile experience with new navigation patterns.",
-    progress: 45,
-    status: "Active",
-    dueDate: "Jan 20, 2026",
-    members: [
-      { name: "David Kim" },
-      { name: "Eva Martinez" },
-      { name: "Frank Chen" },
-    ],
-  },
-  {
-    id: "p3",
-    name: "API Gateway Migration",
-    description: "Migrating legacy REST endpoints to the new GraphQL gateway.",
-    progress: 28,
-    status: "On Hold",
-    dueDate: "Nov 30, 2025",
-    members: [
-      { name: "Grace Liu" },
-      { name: "Henry Park" },
-      { name: "Iris Wang" },
-    ],
-  },
-  {
-    id: "p4",
-    name: "Onboarding Flow",
-    description: "New employee onboarding workflow automation with document signing.",
-    progress: 91,
-    status: "Active",
-    dueDate: "Nov 22, 2025",
-    members: [
-      { name: "Jack Brown" },
-      { name: "Karen Davis" },
-      { name: "Leo Nguyen" },
-    ],
-  },
-  {
-    id: "p5",
-    name: "Data Pipeline Rebuild",
-    description: "Rebuilding ETL pipelines for real-time analytics processing.",
-    progress: 15,
-    status: "Active",
-    dueDate: "Nov 10, 2025",
-    members: [
-      { name: "Mia Thompson" },
-      { name: "Noah Wilson" },
-      { name: "Olivia Garcia" },
-    ],
-  },
-  {
-    id: "p6",
-    name: "Security Audit 2025",
-    description: "Annual security audit and penetration testing with compliance reporting.",
-    progress: 100,
-    status: "Completed",
-    dueDate: "Oct 30, 2025",
-    members: [
-      { name: "Paul Robinson" },
-      { name: "Quinn Adams" },
-      { name: "Rita Patel" },
-    ],
-  },
-];
+const memberColors: Record<string, string> = { SC: "#BFFF00", MJ: "#00C2FF", AP: "#FFB800", TW: "#7B61FF", ER: "#FF5C33", DK: "#BFFF00" };
+const priorityColor: Record<string, string> = { critical: "red", high: "orange", medium: "amber", low: "lime" };
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function getProgressColor(progress: number, status: string): string {
-  if (status === "Completed") return "bg-[#BFFF00]";
-  if (progress < 30) return "bg-[#FF5C33]";
-  if (progress < 60) return "bg-[#FFB800]";
-  return "bg-[#BFFF00]";
-}
-
-function getStatusVariant(
-  status: Project["status"]
-): { bg: string; text: string } {
-  switch (status) {
-    case "Active":
-      return { bg: "bg-[#BFFF00]/10", text: "text-[#BFFF00]" };
-    case "On Hold":
-      return { bg: "bg-[#FFB800]/10", text: "text-[#FFB800]" };
-    case "Completed":
-      return { bg: "bg-[#BFFF00]/10", text: "text-[#BFFF00]" };
-  }
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
-}
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-const OverlappingAvatars: React.FC<{ members: ProjectMember[] }> = ({
-  members,
-}) => {
-  const avatarColors = [
-    "bg-[#7B61FF]",
-    "bg-[#00C2FF]",
-    "bg-[#FFB800]",
-  ];
+export default function ProjectsOverview() {
+  const [search, setSearch] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const filtered = projects.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="flex -space-x-2">
-      {members.map((member, idx) => (
-        <Avatar
-          key={member.name}
-          src={member.avatar}
-          fallback={getInitials(member.name)}
-          className={`w-7 h-7 rounded-none border-2 border-[#111] text-[10px] font-semibold text-white ${avatarColors[idx % avatarColors.length]}`}
-        />
-      ))}
-    </div>
-  );
-};
-
-const ProjectCard: React.FC<{ project: Project }> = ({ project }) => {
-  const statusStyle = getStatusVariant(project.status);
-  const barColor = getProgressColor(project.progress, project.status);
-
-  return (
-    <div className="bg-[#111] border border-[#1A1A1A] rounded-none p-5 flex flex-col gap-4 hover:border-[#333] transition-colors">
+    <div className="py-8 px-12 min-h-full">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <h3 className="font-[JetBrains_Mono] text-sm font-semibold text-white leading-tight">
-          {project.name}
-        </h3>
-        <Badge className={`${statusStyle.bg} ${statusStyle.text} rounded-none text-[11px] font-medium px-2 py-0.5 whitespace-nowrap`}>
-          {project.status}
-        </Badge>
-      </div>
-
-      {/* Description */}
-      <p className="font-[Inter] text-xs text-[#6e6e6e] leading-relaxed line-clamp-2">
-        {project.description}
-      </p>
-
-      {/* Progress */}
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center justify-between">
-          <span className="font-[JetBrains_Mono] text-[11px] text-[#6e6e6e]">
-            Progress
-          </span>
-          <span className="font-[JetBrains_Mono] text-[11px] text-white">
-            {project.progress}%
-          </span>
-        </div>
-        <div className="h-1.5 w-full bg-[#1A1A1A] rounded-none overflow-hidden">
-          <div
-            className={`h-full ${barColor} rounded-none transition-all duration-500`}
-            style={{ width: `${project.progress}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-1">
-        <OverlappingAvatars members={project.members} />
-        <div className="flex items-center gap-1.5 text-[#6e6e6e]">
-          <Calendar className="w-3.5 h-3.5" />
-          <span className="font-[Inter] text-[11px]">{project.dueDate}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
-const ProjectsOverview: React.FC = () => {
-  return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
-        {/* Header */}
-        <PageHeader title="Projects">
-          <Button className="bg-[#BFFF00] text-black font-[JetBrains_Mono] text-sm font-semibold px-4 py-2 rounded-none hover:bg-[#BFFF00]/90 transition-colors flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            New Project
-          </Button>
-        </PageHeader>
-
-        {/* Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {metrics.map((m) => (
-            <MetricCard
-              key={m.label}
-              label={m.label}
-              value={m.value}
-              icon={m.icon}
-              className="bg-[#111] border border-[#1A1A1A] rounded-none p-5"
-              accentClassName={m.accent}
-            />
-          ))}
-        </div>
-
-        {/* Projects Grid */}
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="font-[JetBrains_Mono] text-base font-semibold text-white mb-4">
-            All Projects
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
+          <h1 className="font-secondary text-[28px] font-bold text-foreground">Projects</h1>
+          <p className="font-primary text-[13px] text-muted-foreground mt-1">Manage and track all projects</p>
+        </div>
+        <button onClick={() => setCreateOpen(true)} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 font-primary text-[13px] font-bold hover:opacity-90 transition-opacity">
+          <Plus size={14} />
+          New Project
+        </button>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <MetricCard label="Total Projects" value="18" />
+        <MetricCard label="Active" value="12" change="In progress" changeType="positive" />
+        <MetricCard label="Completed" value="4" />
+        <MetricCard label="Overdue" value="2" change="Needs attention" changeType="negative" />
+      </div>
+
+      {/* Filter Bar */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="relative flex-1 max-w-sm">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-card border border-border pl-9 pr-4 py-2.5 font-primary text-[13px] text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors"
+            placeholder="Search projects..." />
+        </div>
+        <button className="flex items-center gap-2 bg-card border border-border px-4 py-2.5 font-primary text-[13px] text-muted-foreground hover:text-foreground hover:bg-[#0A0A0A] transition-colors">
+          <Filter size={14} />
+          Filter
+        </button>
+      </div>
+
+      {/* Project Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {filtered.map((p) => (
+          <div key={p.id} className="bg-card border border-border hover:border-muted transition-colors group">
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 flex-shrink-0" style={{ background: p.color }} />
+                    <h3 className="font-secondary text-[15px] font-bold text-foreground truncate">{p.name}</h3>
+                  </div>
+                  <p className="font-primary text-[12px] text-muted-foreground line-clamp-1">{p.desc}</p>
+                </div>
+                <Link to={`/projects/${p.id}/sprint`} className="text-muted-foreground hover:text-primary transition-colors ml-2 opacity-0 group-hover:opacity-100">
+                  <ExternalLink size={14} />
+                </Link>
+              </div>
+              <div className="flex items-center gap-2 mb-4">
+                <Badge color={p.status === "completed" ? "gray" : "lime"} label={p.status} />
+                <Badge color={priorityColor[p.priority]} label={p.priority} />
+              </div>
+              <div className="mb-4">
+                <div className="flex justify-between mb-1.5">
+                  <span className="font-primary text-[11px] text-muted-foreground uppercase tracking-[0.5px]">Progress</span>
+                  <span className="font-primary text-[11px] font-semibold" style={{ color: p.color }}>{p.progress}%</span>
+                </div>
+                <div className="h-1.5 bg-border">
+                  <div className="h-1.5 transition-all" style={{ width: `${p.progress}%`, background: p.color }} />
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex -space-x-2">
+                  {p.members.map((m) => (
+                    <div key={m} className="w-7 h-7 border-2 border-card flex items-center justify-center text-[9px] font-bold font-primary" style={{ background: `${memberColors[m]}20`, color: memberColors[m] }}>
+                      {m}
+                    </div>
+                  ))}
+                </div>
+                <div className="text-right">
+                  <p className="font-primary text-[11px] text-muted-foreground">{p.spent} / {p.budget}</p>
+                  <p className="font-primary text-[10px] text-muted-foreground">{p.start} – {p.end}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Create Project Modal */}
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create Project"
+        footer={
+          <>
+            <button onClick={() => setCreateOpen(false)} className="bg-card border border-border px-5 py-2.5 font-primary text-[13px] text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+            <button className="bg-primary text-primary-foreground px-5 py-2.5 font-primary text-[13px] font-bold hover:opacity-90">Create Project</button>
+          </>
+        }>
+        <div className="flex flex-col gap-4">
+          {[["Project Name", "text", "Enter project name"], ["Description", "text", "Brief description"]].map(([label, type, ph]) => (
+            <div key={label} className="flex flex-col gap-2">
+              <label className="font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">{label}</label>
+              <input type={type} className="bg-[#0A0A0A] border border-border px-3.5 py-3 font-primary text-[13px] text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors" placeholder={ph} />
+            </div>
+          ))}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2"><label className="font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">Start Date</label><input type="date" className="bg-[#0A0A0A] border border-border px-3.5 py-3 font-primary text-[13px] text-foreground outline-none focus:border-primary transition-colors" /></div>
+            <div className="flex flex-col gap-2"><label className="font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">End Date</label><input type="date" className="bg-[#0A0A0A] border border-border px-3.5 py-3 font-primary text-[13px] text-foreground outline-none focus:border-primary transition-colors" /></div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">Priority</label>
+            <select className="bg-[#0A0A0A] border border-border px-3.5 py-3 font-primary text-[13px] text-foreground outline-none focus:border-primary transition-colors">
+              <option>High</option><option>Medium</option><option>Low</option>
+            </select>
           </div>
         </div>
-      </div>
+      </Modal>
     </div>
   );
-};
-
-export default ProjectsOverview;
+}

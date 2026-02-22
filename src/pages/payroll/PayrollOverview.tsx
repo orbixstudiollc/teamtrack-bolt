@@ -1,246 +1,161 @@
-import { useState, useEffect } from "react";
-import {
-  DollarSign,
-  Users,
-  TrendingUp,
-  Clock,
-  CalendarDays,
-  ArrowRight,
-} from "lucide-react";
-import PageHeader from "../../components/PageHeader";
-import Badge from "../../components/Badge";
-import Button from "../../components/Button";
+import { useState } from "react";
+import { DollarSign, Users, TrendingUp, Calendar, Plus, Download, ChevronRight } from "lucide-react";
 import MetricCard from "../../components/MetricCard";
-import DataTable from "../../components/DataTable";
-import ListCard from "../../components/ListCard";
+import Badge from "../../components/Badge";
+import Modal from "../../components/Modal";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-
-interface DepartmentRow {
-  department: string;
-  employees: number;
-  total: string;
-  avg: string;
-  status: "On Track" | "Over Budget" | "Under Review";
-}
-
-// ── Data ───────────────────────────────────────────────────────────────────────
-
-const departmentData: DepartmentRow[] = [
-  {
-    department: "Engineering",
-    employees: 16,
-    total: "$112,000",
-    avg: "$7,000",
-    status: "On Track",
-  },
-  {
-    department: "Design",
-    employees: 8,
-    total: "$52,000",
-    avg: "$6,500",
-    status: "On Track",
-  },
-  {
-    department: "Marketing",
-    employees: 10,
-    total: "$55,000",
-    avg: "$5,500",
-    status: "Over Budget",
-  },
-  {
-    department: "Sales",
-    employees: 9,
-    total: "$45,000",
-    avg: "$5,000",
-    status: "Under Review",
-  },
-  {
-    department: "Operations",
-    employees: 5,
-    total: "$20,160",
-    avg: "$4,032",
-    status: "On Track",
-  },
+const payrollRuns = [
+  { period: "February 2024", employees: 47, gross: "$284,000", deductions: "$56,800", net: "$227,200", status: "processing", date: "Feb 28" },
+  { period: "January 2024", employees: 47, gross: "$280,000", deductions: "$56,000", net: "$224,000", status: "completed", date: "Jan 31" },
+  { period: "December 2023", employees: 45, gross: "$275,000", deductions: "$55,000", net: "$220,000", status: "completed", date: "Dec 31" },
+  { period: "November 2023", employees: 45, gross: "$271,000", deductions: "$54,200", net: "$216,800", status: "completed", date: "Nov 30" },
+  { period: "October 2023", employees: 44, gross: "$268,000", deductions: "$53,600", net: "$214,400", status: "completed", date: "Oct 31" },
 ];
 
-const columns = [
-  { key: "department" as const, label: "Department" },
-  { key: "employees" as const, label: "Employees", align: "right" as const },
-  { key: "total" as const, label: "Total", align: "right" as const },
-  { key: "avg" as const, label: "Avg Salary", align: "right" as const },
-  {
-    key: "status" as const,
-    label: "Status",
-    render: (value: string) => {
-      const variant =
-        value === "On Track"
-          ? "success"
-          : value === "Over Budget"
-            ? "destructive"
-            : "warning";
-      return <Badge variant={variant}>{value}</Badge>;
-    },
-  },
+const deptBreakdown = [
+  { dept: "Engineering", headcount: 18, avg: "$8,400", total: "$151,200", color: "#BFFF00" },
+  { dept: "Design", headcount: 8, avg: "$6,800", total: "$54,400", color: "#00C2FF" },
+  { dept: "Marketing", headcount: 7, avg: "$5,600", total: "$39,200", color: "#FFB800" },
+  { dept: "HR", headcount: 5, avg: "$5,200", total: "$26,000", color: "#7B61FF" },
+  { dept: "Finance", headcount: 5, avg: "$7,200", total: "$36,000", color: "#FF5C33" },
+  { dept: "Operations", headcount: 4, avg: "$4,800", total: "$19,200", color: "#6e6e6e" },
 ];
-
-// ── Helpers ─────────────────────────────────────────────────────────────────────
-
-function useIsMobile(breakpoint = 768) {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${breakpoint}px)`);
-    const onChange = (e: MediaQueryListEvent | MediaQueryList) =>
-      setIsMobile(e.matches);
-    onChange(mql);
-    mql.addEventListener("change", onChange);
-    return () => mql.removeEventListener("change", onChange);
-  }, [breakpoint]);
-
-  return isMobile;
-}
-
-function getCountdown(target: Date): string {
-  const now = new Date();
-  const diff = target.getTime() - now.getTime();
-  if (diff <= 0) return "Today";
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  return `${days}d ${hours}h remaining`;
-}
-
-// ── Component ──────────────────────────────────────────────────────────────────
 
 export default function PayrollOverview() {
-  const isMobile = useIsMobile();
-  const nextPayrollDate = new Date(2025, 11, 1); // Dec 1, 2025
-  const [countdown, setCountdown] = useState(getCountdown(nextPayrollDate));
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCountdown(getCountdown(nextPayrollDate));
-    }, 60_000);
-    return () => clearInterval(interval);
-  }, []);
+  const handleProcess = () => {
+    setConfirmOpen(false);
+    setSuccessOpen(true);
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-secondary">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Header */}
-        <PageHeader
-          title="Payroll Overview"
-          actions={
-            <Button variant="primary" href="/payroll/run">
-              <DollarSign className="mr-2 h-4 w-4" />
-              Run Payroll
-            </Button>
-          }
-        />
+    <div className="py-8 px-12 min-h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="font-secondary text-[28px] font-bold text-foreground">Payroll</h1>
+          <p className="font-primary text-[13px] text-muted-foreground mt-1">Manage employee compensation</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 bg-card border border-border px-4 py-2.5 font-primary text-[13px] text-muted-foreground hover:text-foreground hover:bg-[#0A0A0A] transition-colors">
+            <Download size={14} />
+            Export
+          </button>
+          <button onClick={() => setConfirmOpen(true)} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 font-primary text-[13px] font-bold hover:opacity-90 transition-opacity">
+            <Plus size={14} />
+            Run Payroll
+          </button>
+        </div>
+      </div>
 
-        {/* Metric Cards */}
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
-            title="Total Payroll"
-            value="$284K"
-            icon={<DollarSign className="h-5 w-5" />}
-            trend="+3.2% from last month"
-          />
-          <MetricCard
-            title="Employees"
-            value="48"
-            icon={<Users className="h-5 w-5" />}
-            trend="+2 new this month"
-          />
-          <MetricCard
-            title="Avg Salary"
-            value="$5,917"
-            icon={<TrendingUp className="h-5 w-5" />}
-            trend="+1.8% from last month"
-          />
-          <MetricCard
-            title="Pending"
-            value="$12.4K"
-            icon={<Clock className="h-5 w-5" />}
-            trend="3 employees pending"
-          />
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <MetricCard label="Total Payroll" value="$284K" change="↑ +1.4% vs last month" changeType="positive" />
+        <MetricCard label="Employees" value="47" change="No change" changeType="neutral" />
+        <MetricCard label="Avg Salary" value="$6.2K" change="↑ +$120 vs last month" changeType="positive" />
+        <MetricCard label="Next Pay Date" value="Feb 28" change="6 days away" changeType="neutral" />
+      </div>
+
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Payroll Runs Table */}
+        <div className="lg:col-span-2 bg-card border border-border">
+          <div className="px-6 py-4 border-b border-border">
+            <h2 className="font-secondary text-[16px] font-bold text-foreground">Payroll History</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[#0A0A0A] border-b border-border">
+                  {["Period", "Employees", "Gross", "Deductions", "Net", "Status"].map(h => (
+                    <th key={h} className="px-6 py-3 text-left font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {payrollRuns.map((row, i) => (
+                  <tr key={i} className={`border-b border-border last:border-b-0 ${i % 2 === 0 ? "bg-card" : "bg-[#0D0D0D]"} hover:bg-muted/10 cursor-pointer transition-colors`}>
+                    <td className="px-6 py-4 font-primary text-[13px] font-semibold text-foreground">{row.period}</td>
+                    <td className="px-6 py-4 font-primary text-[13px] text-muted-foreground">{row.employees}</td>
+                    <td className="px-6 py-4 font-primary text-[13px] text-foreground">{row.gross}</td>
+                    <td className="px-6 py-4 font-primary text-[13px] text-muted-foreground">{row.deductions}</td>
+                    <td className="px-6 py-4 font-primary text-[13px] font-semibold text-primary">{row.net}</td>
+                    <td className="px-6 py-4"><Badge color={row.status === "completed" ? "lime" : "pending"} label={row.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Department Breakdown */}
-        <section className="mt-10">
-          <h2 className="mb-4 font-primary text-lg font-semibold tracking-tight text-foreground">
-            Department Breakdown
-          </h2>
-
-          {isMobile ? (
-            <div className="space-y-3">
-              {departmentData.map((dept) => (
-                <ListCard
-                  key={dept.department}
-                  title={dept.department}
-                  subtitle={`${dept.employees} employees`}
-                  trailing={
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="font-primary text-sm font-medium text-foreground">
-                        {dept.total}
-                      </span>
-                      <Badge
-                        variant={
-                          dept.status === "On Track"
-                            ? "success"
-                            : dept.status === "Over Budget"
-                              ? "destructive"
-                              : "warning"
-                        }
-                      >
-                        {dept.status}
-                      </Badge>
-                    </div>
-                  }
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-none border border-border bg-card">
-              <DataTable<DepartmentRow> columns={columns} data={departmentData} />
-            </div>
-          )}
-        </section>
-
-        {/* Upcoming Payroll */}
-        <section className="mt-10">
-          <div className="rounded-none border border-border bg-card p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center bg-[#0A0A0A] border border-border">
-                <CalendarDays className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-primary text-sm font-semibold text-foreground">
-                  Upcoming Payroll
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Next scheduled payroll run
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="font-primary text-2xl font-bold text-foreground">
-                  December 1, 2025
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {countdown}
-                </p>
-              </div>
-              <Button variant="ghost" className="group">
-                View Schedule
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Button>
-            </div>
+        <div className="bg-card border border-border">
+          <div className="px-6 py-4 border-b border-border">
+            <h2 className="font-secondary text-[16px] font-bold text-foreground">By Department</h2>
           </div>
-        </section>
+          <div className="divide-y divide-border">
+            {deptBreakdown.map((d, i) => (
+              <div key={i} className="px-6 py-4 hover:bg-[#0A0A0A] transition-colors">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 flex-shrink-0" style={{ background: d.color }} />
+                    <span className="font-primary text-[13px] text-foreground">{d.dept}</span>
+                  </div>
+                  <span className="font-secondary text-[13px] font-bold text-foreground">{d.total}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-primary text-[11px] text-muted-foreground">{d.headcount} employees</span>
+                  <span className="font-primary text-[11px] text-muted-foreground">avg {d.avg}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
+
+      {/* Confirmation Modal */}
+      <Modal open={confirmOpen} onClose={() => setConfirmOpen(false)} title="Process Payroll?" width="max-w-[440px]"
+        footer={
+          <>
+            <button onClick={() => setConfirmOpen(false)} className="bg-card border border-border px-5 py-2.5 font-primary text-[13px] text-muted-foreground hover:text-foreground transition-colors">Review</button>
+            <button onClick={handleProcess} className="bg-primary text-primary-foreground px-5 py-2.5 font-primary text-[13px] font-bold hover:opacity-90 transition-opacity">Process Payroll</button>
+          </>
+        }>
+        <div className="flex flex-col items-center gap-4 py-2">
+          <div className="w-14 h-14 bg-[#1A1207] border border-[#3A2A10] flex items-center justify-center">
+            <DollarSign size={24} className="text-warning" />
+          </div>
+          <div className="text-center">
+            <p className="font-primary text-[13px] text-muted-foreground">You are about to process payroll for February 2024</p>
+          </div>
+          <div className="w-full bg-[#1A1207] border border-[#3A2A10] p-4">
+            <div className="flex justify-between mb-2"><span className="font-primary text-[12px] text-muted-foreground">Employees</span><span className="font-primary text-[12px] text-foreground font-semibold">47</span></div>
+            <div className="flex justify-between mb-2"><span className="font-primary text-[12px] text-muted-foreground">Gross Total</span><span className="font-primary text-[12px] text-foreground font-semibold">$284,000</span></div>
+            <div className="flex justify-between"><span className="font-primary text-[12px] text-muted-foreground">Net Payout</span><span className="font-primary text-[12px] text-primary font-bold">$227,200</span></div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Success Modal */}
+      <Modal open={successOpen} onClose={() => setSuccessOpen(false)} title="Payroll Processed" width="max-w-[440px]"
+        footer={
+          <>
+            <button onClick={() => setSuccessOpen(false)} className="bg-card border border-border px-5 py-2.5 font-primary text-[13px] text-muted-foreground hover:text-foreground transition-colors">Close</button>
+            <button className="bg-primary text-primary-foreground px-5 py-2.5 font-primary text-[13px] font-bold hover:opacity-90 transition-opacity">View Payslips</button>
+          </>
+        }>
+        <div className="flex flex-col items-center gap-4 py-2">
+          <div className="w-14 h-14 bg-[#0D1A0F] border border-[#1A3A1F] flex items-center justify-center">
+            <TrendingUp size={24} className="text-primary" />
+          </div>
+          <p className="font-primary text-[13px] text-muted-foreground text-center">Payroll for February 2024 has been processed successfully.</p>
+          <div className="w-full bg-[#0D1A0F] border border-[#1A3A1F] p-4">
+            <p className="font-primary text-[12px] text-primary text-center font-semibold">47 payslips have been generated and sent.</p>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -1,472 +1,177 @@
-import React from "react";
-import {
-  Users,
-  Clock,
-  FolderOpen,
-  AlertCircle,
-  ArrowUpRight,
-  ArrowDownRight,
-  Calendar,
-  MessageSquare,
-  CheckCircle2,
-  GitPullRequest,
-} from "lucide-react";
-
+import { useState } from "react";
+import { Users, Clock, FolderOpen, AlertCircle, ArrowUpRight, Download, Calendar, CheckCircle2, XCircle, Clock3, TrendingUp } from "lucide-react";
 import MetricCard from "../../components/MetricCard";
-import PageHeader from "../../components/PageHeader";
 import Badge from "../../components/Badge";
-import Button from "../../components/Button";
-import Avatar from "../../components/Avatar";
-import DataTable from "../../components/DataTable";
-import ListCard from "../../components/ListCard";
 
-// ---------------------------------------------------------------------------
-// Mock Data
-// ---------------------------------------------------------------------------
-
-const metrics = [
-  {
-    label: "Active Members",
-    value: "24",
-    change: "+12%",
-    changeType: "positive" as const,
-  },
-  {
-    label: "Hours Tracked",
-    value: "1,248",
-    change: "+8%",
-    changeType: "positive" as const,
-  },
-  {
-    label: "Active Projects",
-    value: "12",
-    change: "+3%",
-    changeType: "positive" as const,
-  },
-  {
-    label: "Pending Actions",
-    value: "5",
-    change: "-2 items",
-    changeType: "negative" as const,
-  },
+const teamActivity = [
+  { id: 1, name: "Sarah Chen", action: "completed task", target: "Homepage Redesign", time: "2 min ago", color: "#BFFF00" },
+  { id: 2, name: "Marcus Johnson", action: "logged 3h on", target: "API Integration", time: "15 min ago", color: "#00C2FF" },
+  { id: 3, name: "Aisha Patel", action: "submitted leave request for", target: "Annual Leave", time: "1 hr ago", color: "#FFB800" },
+  { id: 4, name: "Tom Wilson", action: "pushed update to", target: "Mobile App Sprint 2", time: "2 hrs ago", color: "#7B61FF" },
+  { id: 5, name: "Elena Rossi", action: "approved payroll for", target: "February 2024", time: "3 hrs ago", color: "#FF5C33" },
+  { id: 6, name: "David Kim", action: "created project", target: "Customer Portal", time: "5 hrs ago", color: "#BFFF00" },
 ];
 
-interface ActivityItem {
-  id: number;
-  initials: string;
-  name: string;
-  action: string;
-  target: string;
-  time: string;
-  icon: React.ReactNode;
-}
-
-const activityFeed: ActivityItem[] = [
-  {
-    id: 1,
-    initials: "JD",
-    name: "Jake Dawson",
-    action: "completed task",
-    target: "API Integration",
-    time: "12 min ago",
-    icon: <CheckCircle2 className="h-4 w-4 text-primary" />,
-  },
-  {
-    id: 2,
-    initials: "ML",
-    name: "Maria Lopez",
-    action: "commented on",
-    target: "Design Review",
-    time: "34 min ago",
-    icon: <MessageSquare className="h-4 w-4 text-muted-foreground" />,
-  },
-  {
-    id: 3,
-    initials: "KP",
-    name: "Kevin Park",
-    action: "opened PR for",
-    target: "Auth Module",
-    time: "1 hr ago",
-    icon: <GitPullRequest className="h-4 w-4 text-muted-foreground" />,
-  },
-  {
-    id: 4,
-    initials: "AS",
-    name: "Anya Singh",
-    action: "logged 4h on",
-    target: "Mobile App",
-    time: "2 hr ago",
-    icon: <Clock className="h-4 w-4 text-muted-foreground" />,
-  },
+const upcomingLeave = [
+  { name: "Aisha Patel", type: "Annual Leave", dates: "Mar 1–5", days: 5, status: "pending" },
+  { name: "Marcus Johnson", type: "Sick Leave", dates: "Feb 28", days: 1, status: "approved" },
+  { name: "Tom Wilson", type: "Personal Day", dates: "Mar 4", days: 1, status: "approved" },
+  { name: "Elena Rossi", type: "Comp Time", dates: "Mar 7–8", days: 2, status: "pending" },
 ];
 
-interface LeaveItem {
-  id: number;
-  initials: string;
-  name: string;
-  dates: string;
-  type: string;
-  badgeColor: string;
-}
-
-const upcomingLeave: LeaveItem[] = [
-  {
-    id: 1,
-    initials: "RL",
-    name: "Rachel Lee",
-    dates: "Mar 3 - Mar 7",
-    type: "Vacation",
-    badgeColor: "lime",
-  },
-  {
-    id: 2,
-    initials: "TN",
-    name: "Tom Nguyen",
-    dates: "Mar 5 - Mar 6",
-    type: "Personal",
-    badgeColor: "amber",
-  },
-  {
-    id: 3,
-    initials: "DP",
-    name: "Diana Patel",
-    dates: "Mar 10 - Mar 14",
-    type: "Sick Leave",
-    badgeColor: "red",
-  },
+const timeEntries = [
+  { employee: "Sarah Chen", project: "Website Redesign", task: "Homepage UI", hours: "6h 30m", status: "active" },
+  { employee: "Marcus Johnson", project: "API Integration", task: "Stripe Webhook", hours: "4h 15m", status: "active" },
+  { employee: "Aisha Patel", project: "Design System", task: "Component Docs", hours: "3h 45m", status: "done" },
+  { employee: "Tom Wilson", project: "Mobile App", task: "Auth Flow", hours: "5h 00m", status: "done" },
+  { employee: "David Kim", project: "Customer Portal", task: "Dashboard Layout", hours: "2h 30m", status: "active" },
 ];
 
-interface TimeEntry {
-  id: number;
-  employee: string;
-  initials: string;
-  project: string;
-  task: string;
-  duration: string;
-  date: string;
-}
-
-const timeEntries: TimeEntry[] = [
-  {
-    id: 1,
-    employee: "Jake Dawson",
-    initials: "JD",
-    project: "TeamTrack Pro",
-    task: "API Integration",
-    duration: "3h 45m",
-    date: "Feb 22, 2026",
-  },
-  {
-    id: 2,
-    employee: "Maria Lopez",
-    initials: "ML",
-    project: "Client Portal",
-    task: "Design Review",
-    duration: "2h 15m",
-    date: "Feb 22, 2026",
-  },
-  {
-    id: 3,
-    employee: "Kevin Park",
-    initials: "KP",
-    project: "TeamTrack Pro",
-    task: "Auth Module",
-    duration: "4h 30m",
-    date: "Feb 21, 2026",
-  },
-  {
-    id: 4,
-    employee: "Anya Singh",
-    initials: "AS",
-    project: "Mobile App",
-    task: "Push Notifications",
-    duration: "1h 50m",
-    date: "Feb 21, 2026",
-  },
+const budgetHealth = [
+  { project: "Website Redesign", budget: 50000, spent: 32500, pct: 65, color: "#BFFF00" },
+  { project: "Mobile App", budget: 80000, spent: 36000, pct: 45, color: "#00C2FF" },
+  { project: "API Integration", budget: 30000, spent: 23400, pct: 78, color: "#FFB800" },
+  { project: "Design System", budget: 20000, spent: 16400, pct: 82, color: "#7B61FF" },
 ];
 
-interface BudgetProject {
-  name: string;
-  spent: number;
-  budget: number;
-  percentage: number;
-  status: "healthy" | "warning" | "critical";
-}
+const statusIcon = (s: string) => s === "active" ? <CheckCircle2 size={14} className="text-primary" /> : <Clock3 size={14} className="text-muted-foreground" />;
 
-const budgetProjects: BudgetProject[] = [
-  {
-    name: "TeamTrack Pro",
-    spent: 42_000,
-    budget: 60_000,
-    percentage: 70,
-    status: "healthy",
-  },
-  {
-    name: "Client Portal",
-    spent: 28_500,
-    budget: 35_000,
-    percentage: 81,
-    status: "warning",
-  },
-  {
-    name: "Mobile App",
-    spent: 18_200,
-    budget: 20_000,
-    percentage: 91,
-    status: "critical",
-  },
-];
+export default function Dashboard() {
+  const [dateLabel] = useState("Feb 22, 2024");
 
-// ---------------------------------------------------------------------------
-// DataTable column definitions
-// ---------------------------------------------------------------------------
-
-const timeEntryColumns = [
-  {
-    key: "employee" as const,
-    header: "Employee",
-    render: (row: TimeEntry) => (
-      <div className="flex items-center gap-3">
-        <Avatar initials={row.initials} size="sm" />
-        <span className="font-secondary text-sm text-foreground">
-          {row.employee}
-        </span>
-      </div>
-    ),
-  },
-  {
-    key: "project" as const,
-    header: "Project",
-    render: (row: TimeEntry) => (
-      <span className="font-secondary text-sm text-foreground">
-        {row.project}
-      </span>
-    ),
-  },
-  {
-    key: "task" as const,
-    header: "Task",
-    render: (row: TimeEntry) => (
-      <span className="font-secondary text-sm text-muted-foreground">
-        {row.task}
-      </span>
-    ),
-  },
-  {
-    key: "duration" as const,
-    header: "Duration",
-    render: (row: TimeEntry) => (
-      <span className="font-primary text-sm text-primary">{row.duration}</span>
-    ),
-  },
-  {
-    key: "date" as const,
-    header: "Date",
-    render: (row: TimeEntry) => (
-      <span className="font-secondary text-sm text-muted-foreground">
-        {row.date}
-      </span>
-    ),
-  },
-];
-
-// ---------------------------------------------------------------------------
-// Helper: Budget bar colour
-// ---------------------------------------------------------------------------
-
-function budgetBarColor(status: BudgetProject["status"]): string {
-  switch (status) {
-    case "healthy":
-      return "bg-primary";
-    case "warning":
-      return "bg-amber-500";
-    case "critical":
-      return "bg-red-500";
-  }
-}
-
-function budgetTextColor(status: BudgetProject["status"]): string {
-  switch (status) {
-    case "healthy":
-      return "text-primary";
-    case "warning":
-      return "text-amber-500";
-    case "critical":
-      return "text-red-500";
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
-const Dashboard: React.FC = () => {
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6 lg:p-8">
-      {/* ------- Page Header ------- */}
-      <PageHeader
-        title="Admin Dashboard"
-        subtitle="Welcome back, Sarah"
-        actions={
-          <Button variant="primary" size="sm">
-            <Calendar className="h-4 w-4" />
-            <span>Export Report</span>
-          </Button>
-        }
-      />
-
-      {/* ------- Metric Cards ------- */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {metrics.map((m) => (
-          <MetricCard
-            key={m.label}
-            label={m.label}
-            value={m.value}
-            change={m.change}
-            changeType={m.changeType}
-          />
-        ))}
+    <div className="py-8 px-12 min-h-full">
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="font-secondary text-[28px] font-bold text-foreground">Dashboard</h1>
+          <p className="font-primary text-[13px] text-muted-foreground mt-1">Overview of your workforce</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 bg-card border border-border px-4 py-2.5 font-primary text-[13px] text-muted-foreground hover:text-foreground hover:bg-[#0A0A0A] transition-colors">
+            <Calendar size={14} />
+            {dateLabel}
+          </button>
+          <button className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 font-primary text-[13px] font-bold hover:opacity-90 transition-opacity">
+            <Download size={14} />
+            Download Report
+          </button>
+        </div>
       </div>
 
-      {/* ------- Two-Column: Activity Feed + Upcoming Leave ------- */}
-      <div className="flex flex-col gap-4 lg:flex-row">
-        {/* --- Team Activity Feed --- */}
-        <div className="flex-1 bg-card border border-border rounded-none p-5">
-          <h2 className="font-primary text-base font-semibold text-foreground mb-4">
-            Team Activity Feed
-          </h2>
+      {/* Metric Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <MetricCard label="Active Members" value="24" change="↑ +3 this week" changeType="positive" />
+        <MetricCard label="Hours Tracked" value="186.5h" change="↑ +12h vs last week" changeType="positive" />
+        <MetricCard label="Active Projects" value="12" change="2 due this month" changeType="neutral" />
+        <MetricCard label="Pending Actions" value="7" change="3 urgent" changeType="negative" />
+      </div>
 
-          <div className="flex flex-col gap-4">
-            {activityFeed.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-start gap-3 pb-4 border-b border-border last:border-b-0 last:pb-0"
-              >
-                <Avatar initials={item.initials} size="sm" />
+      {/* Middle Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+        {/* Team Activity */}
+        <div className="lg:col-span-2 bg-card border border-border">
+          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+            <h2 className="font-secondary text-[16px] font-bold text-foreground">Team Activity</h2>
+            <button className="font-primary text-[12px] text-primary hover:opacity-80 transition-opacity">View all</button>
+          </div>
+          <div className="divide-y divide-border">
+            {teamActivity.map((item) => (
+              <div key={item.id} className="px-6 py-4 flex items-start gap-3 hover:bg-[#0A0A0A] transition-colors">
+                <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center text-[11px] font-bold font-primary" style={{ background: `${item.color}20`, color: item.color }}>
+                  {item.name.split(" ").map(n => n[0]).join("")}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-secondary text-sm text-foreground leading-snug">
-                    <span className="font-medium">{item.name}</span>{" "}
-                    <span className="text-muted-foreground">
-                      {item.action}
-                    </span>{" "}
-                    <span className="text-foreground font-medium">
-                      {item.target}
-                    </span>
+                  <p className="font-primary text-[13px] text-foreground">
+                    <span className="font-semibold">{item.name}</span>{" "}
+                    <span className="text-muted-foreground">{item.action}</span>{" "}
+                    <span className="text-primary">{item.target}</span>
                   </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    {item.icon}
-                    <span className="font-secondary text-xs text-muted-foreground">
-                      {item.time}
-                    </span>
-                  </div>
+                  <p className="font-primary text-[11px] text-muted-foreground mt-0.5">{item.time}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* --- Upcoming Leave --- */}
-        <div className="w-full lg:w-[380px] bg-card border border-border rounded-none p-5 shrink-0">
-          <h2 className="font-primary text-base font-semibold text-foreground mb-4">
-            Upcoming Leave
-          </h2>
-
-          <div className="flex flex-col gap-4">
-            {upcomingLeave.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-3 pb-4 border-b border-border last:border-b-0 last:pb-0"
-              >
-                <Avatar initials={item.initials} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-secondary text-sm font-medium text-foreground truncate">
-                    {item.name}
-                  </p>
-                  <p className="font-secondary text-xs text-muted-foreground mt-0.5">
-                    {item.dates}
-                  </p>
+        {/* Upcoming Leave */}
+        <div className="bg-card border border-border">
+          <div className="px-6 py-4 border-b border-border">
+            <h2 className="font-secondary text-[16px] font-bold text-foreground">Upcoming Leave</h2>
+          </div>
+          <div className="divide-y divide-border">
+            {upcomingLeave.map((item, i) => (
+              <div key={i} className="px-6 py-4 hover:bg-[#0A0A0A] transition-colors">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-primary text-[13px] font-semibold text-foreground">{item.name}</p>
+                  <Badge color={item.status === "approved" ? "lime" : "pending"} label={item.status} />
                 </div>
-                <Badge label={item.type} color={item.badgeColor} />
+                <p className="font-primary text-[12px] text-muted-foreground">{item.type}</p>
+                <p className="font-primary text-[11px] text-muted-foreground mt-0.5">{item.dates} · {item.days} day{item.days > 1 ? "s" : ""}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ------- Recent Time Entries ------- */}
-      <div className="bg-card border border-border rounded-none">
-        {/* Desktop table */}
-        <div className="hidden md:block">
-          <DataTable
-            title="Recent Time Entries"
-            columns={timeEntryColumns}
-            data={timeEntries}
-          />
-        </div>
-
-        {/* Mobile list cards */}
-        <div className="md:hidden p-4">
-          <h2 className="font-primary text-base font-semibold text-foreground mb-4">
-            Recent Time Entries
-          </h2>
-          <div className="flex flex-col gap-3">
-            {timeEntries.map((entry) => (
-              <ListCard
-                key={entry.id}
-                name={entry.employee}
-                detail={`${entry.project} - ${entry.task} | ${entry.duration}`}
-                badge={entry.date}
-                avatar={entry.initials}
-              />
-            ))}
+      {/* Bottom Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Recent Time Entries */}
+        <div className="lg:col-span-2 bg-card border border-border">
+          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+            <h2 className="font-secondary text-[16px] font-bold text-foreground">Recent Time Entries</h2>
+            <button className="font-primary text-[12px] text-primary hover:opacity-80 transition-opacity">View all</button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[#0A0A0A] border-b border-border">
+                  {["Employee", "Project", "Task", "Hours", "Status"].map((h) => (
+                    <th key={h} className="px-6 py-3 text-left font-primary text-[11px] font-semibold uppercase tracking-[1px] text-muted-foreground">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {timeEntries.map((row, i) => (
+                  <tr key={i} className={`border-b border-border last:border-b-0 ${i % 2 === 0 ? "bg-card" : "bg-[#0D0D0D]"} hover:bg-muted/10 transition-colors`}>
+                    <td className="px-6 py-4 font-primary text-[13px] text-foreground">{row.employee}</td>
+                    <td className="px-6 py-4 font-primary text-[13px] text-muted-foreground">{row.project}</td>
+                    <td className="px-6 py-4 font-primary text-[13px] text-muted-foreground">{row.task}</td>
+                    <td className="px-6 py-4 font-primary text-[13px] font-semibold text-foreground">{row.hours}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1.5">{statusIcon(row.status)}<Badge color={row.status === "active" ? "lime" : "gray"} label={row.status} /></div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
 
-      {/* ------- Project Budget Health ------- */}
-      <div className="bg-card border border-border rounded-none p-5">
-        <h2 className="font-primary text-base font-semibold text-foreground mb-5">
-          Project Budget Health
-        </h2>
-
-        <div className="flex flex-col gap-5">
-          {budgetProjects.map((project) => (
-            <div key={project.name} className="flex flex-col gap-2">
-              {/* Label row */}
-              <div className="flex items-center justify-between">
-                <span className="font-secondary text-sm text-foreground font-medium">
-                  {project.name}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="font-primary text-xs text-muted-foreground">
-                    ${project.spent.toLocaleString()} / $
-                    {project.budget.toLocaleString()}
-                  </span>
-                  <span
-                    className={`font-primary text-xs font-semibold ${budgetTextColor(
-                      project.status
-                    )}`}
-                  >
-                    {project.percentage}%
-                  </span>
+        {/* Project Budget Health */}
+        <div className="bg-card border border-border">
+          <div className="px-6 py-4 border-b border-border">
+            <h2 className="font-secondary text-[16px] font-bold text-foreground">Project Budget Health</h2>
+          </div>
+          <div className="p-6 flex flex-col gap-5">
+            {budgetHealth.map((p, i) => (
+              <div key={i}>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-primary text-[12px] text-foreground truncate mr-2">{p.project}</p>
+                  <span className="font-primary text-[12px] font-semibold text-muted-foreground flex-shrink-0">{p.pct}%</span>
+                </div>
+                <div className="h-1.5 bg-border">
+                  <div className="h-1.5 transition-all" style={{ width: `${p.pct}%`, background: p.color }} />
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="font-primary text-[10px] text-muted-foreground">${(p.spent/1000).toFixed(0)}k spent</span>
+                  <span className="font-primary text-[10px] text-muted-foreground">${(p.budget/1000).toFixed(0)}k total</span>
                 </div>
               </div>
-
-              {/* Progress bar */}
-              <div className="h-2 w-full bg-border rounded-none overflow-hidden">
-                <div
-                  className={`h-full rounded-none transition-all duration-300 ${budgetBarColor(
-                    project.status
-                  )}`}
-                  style={{ width: `${project.percentage}%` }}
-                />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default Dashboard;
+}
