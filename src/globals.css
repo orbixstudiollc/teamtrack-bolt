@@ -15,12 +15,12 @@
   --color-info: #00C2FF;
   --color-purple: #7B61FF;
 
-  --radius-none: 0px;
-  --radius-m: 16px;
-  --radius-pill: 999px;
+  --radius-none: 0;
+  --radius-m: 1rem;
+  --radius-pill: 9999px;
 
-  --font-primary: "JetBrains Mono", monospace;
-  --font-secondary: "Inter", sans-serif;
+  --font-family-primary: "JetBrains Mono", monospace;
+  --font-family-secondary: "Inter", sans-serif;
 }
 
 * {
@@ -30,7 +30,7 @@
 }
 
 body {
-  font-family: var(--font-primary);
+  font-family: var(--font-family-primary);
   background-color: var(--color-background);
   color: var(--color-foreground);
 }
